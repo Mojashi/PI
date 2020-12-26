@@ -2,6 +2,8 @@
     "files.associations": {
         "cmath": "cpp",
         "complex": "cpp",
-        "limits": "cpp"
+        "limits": "cpp",
+        "ostream": "cpp",
+        "future": "cpp"
     }
 }
