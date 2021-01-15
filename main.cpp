@@ -16,9 +16,10 @@
 using namespace std;
 namespace mp = boost::multiprecision;
 using ll = long long;
-const ll N = 100;
+const ll N = 100000000;
 const ll n = N / 14;
 
+using BigInt = mp::mpz_int;
 using BigFloat = mp::number<mp::gmp_float<N>>;
 
 const ll A = 13591409, B = 545140134, C = 640320;
@@ -30,7 +31,7 @@ inline void seperate(const mpz_t& x, mpz_t& hx, mpz_t& lx, int bitlen){
 }
 
 void multiply(const mpz_t& x, const mpz_t& y, mpz_t& res, int tnum = 0){
-    if(tnum < 200){
+    if(tnum < 2){
         mpz_mul(res, x, y);
         return;
     }
@@ -112,8 +113,7 @@ public:
 const ll CT24 = C * C * C / 24;
 inline void calcX(long long k, mpz_t X)
 {
-    if (k == 0)
-        mpz_set_si(X, 1);
+    if (k == 0) mpz_set_si(X, 1);
     else {
         mpz_set_si(X, k);
         mpz_mul_si(X,X,k);
@@ -148,7 +148,7 @@ inline void mul(const M &lm, const M &rm, M &m, const int tnum)
         multiply(lm.Z, rm.Z, m.Z);
         mpz_t buf;
         mpz_init(buf);
-        multiply(lm.Y, rm.Z, m.Y);
+        multiply(lm.Y, rm.X, m.Y);
         multiply(lm.Z, rm.Y, buf);
         mpz_add(m.Y, m.Y, buf);
         mpz_clear(buf);
@@ -157,7 +157,7 @@ inline void mul(const M &lm, const M &rm, M &m, const int tnum)
         auto tY = thread([&]{
             mpz_t buf;
             mpz_init(buf);
-            multiply(lm.Y, rm.Z, m.Y);
+            multiply(lm.Y, rm.X, m.Y);
             multiply(lm.Z, rm.Y, buf);
             mpz_add(m.Y, m.Y, buf);
             mpz_clear(buf);
@@ -171,7 +171,7 @@ inline void mul(const M &lm, const M &rm, M &m, const int tnum)
         auto tY = thread([&]{
             mpz_t buf;
             mpz_init(buf);
-            multiply(lm.Y, rm.Z, m.Y);
+            multiply(lm.Y, rm.X, m.Y);
             multiply(lm.Z, rm.Y, buf);
             mpz_add(m.Y, m.Y, buf);
             mpz_clear(buf);
@@ -181,11 +181,11 @@ inline void mul(const M &lm, const M &rm, M &m, const int tnum)
     }
     else if (tnum >= 3)
     {
-        auto tX = thread([&] { multiply(lm.X, rm.X, m.X, min(2, tnum -3)); });
+        auto tX = thread([&] { multiply(lm.X, rm.X, m.X, min(2, tnum - 3)); });
         mpz_t Y2;
         mpz_init(Y2);
         auto tY1 = thread([&] { multiply(lm.Z, rm.Y, m.Y, min(2, tnum - 3 - 2)); });
-        auto tY2 = thread([&] { multiply(lm.Y, rm.X, Y2, min(2, tnum  - 3 - 4)); });
+        auto tY2 = thread([&] { multiply(lm.Y, rm.X, Y2, min(2, tnum - 3 - 4)); });
         multiply(lm.Z, rm.Z, m.Z, min(2, tnum - 6));
         tX.join();
         tY1.join();
@@ -232,7 +232,7 @@ void calcM(ll l, ll r, M &m, int depth = 0, int tn = 0)
     }
 
     // if(depth == 3){
-    //     cout << l << " " << r << ":" << m.X.backend().data()->_mp_size << ":" << m.Y.backend().data()->_mp_size << ":" << m.Z.backend().data()->_mp_size << endl;
+    //     cout << l << " " << r << ":" << < m.Z.backend().data()->_mp_size << endl;
     // }
     // if(depth == SAVE_DEPTH){
     //     ofstream ofs("saves/"+to_string(N)+"_"+to_string(l)+"_"+to_string(r) + ".txt");
@@ -265,6 +265,7 @@ int main(int argc, char *argv[])
     M m;
     calcM(0, n, m,0, tnum - 1);
     cerr << "calcM:" << get_elapsed_time()/1000 << "sec" << endl;
+    reset_stopwatch();
     p = (mp::sqrt(BigFloat(CT))* mp::mpz_int(m.X)) / (12 * mp::mpz_int(m.Y));
     cerr << "calcP:" << get_elapsed_time()/1000 << "sec" << endl;
     cout << setprecision(N) << p << endl;
