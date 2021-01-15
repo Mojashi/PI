@@ -51,11 +51,13 @@ void multiply(const mpz_t& x, const mpz_t& y, mpz_t& res, int tnum){
         mpz_sub(by, hy, ly);
         mpz_mul(by, z1, by);
     });
-
+    auto z2_t = std::thread([&]{
     mpz_init(z2);
     mpz_mul(z2, hx, hy);
     mpz_mul_2exp(z2, z2, bitlen*2);
+    });
 
+    z2_t.join();
     mpz_mul(res, lx, ly);
 
     by_f.join();
