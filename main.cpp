@@ -14,23 +14,26 @@
 
 using namespace std;
 namespace mp = boost::multiprecision;
-
-const int N = 100000000;
-const int n = N / 14;
+using ll = long long;
+const ll N = 100000000;
+const ll n = N / 14;
 
 using BigFloat = mp::number<mp::gmp_float<N>>;
 
-using BigInt = mp::mpz_int;
-
-const BigInt A = 13591409, B = 545140134, C = 640320;
-const BigInt CT = C * C * C;
+const ll A = 13591409, B = 545140134, C = 640320;
+const ll CT = C * C * C;
 
 inline void seperate(const mpz_t& x, mpz_t& hx, mpz_t& lx, int bitlen){
     mpz_tdiv_q_2exp(hx, x, bitlen);
     mpz_tdiv_r_2exp(lx, x, bitlen);
 }
 
-void multiply(const mpz_t& x, const mpz_t& y, mpz_t& res, int tnum){
+void multiply(const mpz_t& x, const mpz_t& y, mpz_t& res, int tnum = 0){
+    if(tnum < 2){
+        mpz_mul(res, x, y);
+        return;
+    }
+
     int xk = x->_mp_size;
     int yk = y->_mp_size;
 
@@ -41,25 +44,31 @@ void multiply(const mpz_t& x, const mpz_t& y, mpz_t& res, int tnum){
     seperate(x, hx, lx, bitlen);
     seperate(y, hy, ly, bitlen);
     
-    mpz_t z2,z1;
+    mpz_t z2,z1,z0;
 
     mpz_t by;
+    tnum -= 2;
+
     auto by_f = std::thread([&] {
         mpz_init(by);   
         mpz_init(z1);
         mpz_sub(z1, hx, lx);
         mpz_sub(by, hy, ly);
-        mpz_mul(by, z1, by);
+        multiply(z1, by, by, tnum/3);
+        // mpz_mul(by, z1, by);
+
     });
     auto z2_t = std::thread([&]{
-    mpz_init(z2);
-    mpz_mul(z2, hx, hy);
-    mpz_mul_2exp(z2, z2, bitlen*2);
+        mpz_init(z2);
+        // mpz_mul(z2, hx, hy);
+        multiply(hx,hy, z2, tnum/3);
+        mpz_mul_2exp(z2, z2, bitlen*2);
     });
 
-    z2_t.join();
-    mpz_mul(res, lx, ly);
+    multiply(lx, ly, res, tnum-(tnum/3)*2);
+    // mpz_mul(res, lx, ly);
 
+    z2_t.join();
     by_f.join();
     mpz_add(z1, z2, res);
     mpz_sub(z1, z1, by);
@@ -77,93 +86,129 @@ void multiply(const mpz_t& x, const mpz_t& y, mpz_t& res, int tnum){
     mpz_clear(ly);
 }   
 
-void mul_wrap(const BigInt& a, const BigInt& b, BigInt& res, int tnum){
-    if(tnum >= 2){
-        mpz_t buf;
-        mpz_init(buf);
+// void mul_wrap(const mpz_t& a, const BigInt& b, BigInt& res, int tnum){
+//     if(tnum >= 2){
+//         mpz_t buf;
+//         mpz_init(buf);
 
-        multiply(a.backend().data(), b.backend().data(), buf, tnum);
-        res.assign(buf);
-        mpz_clear(buf);
-    }
-    else {
-        res = a * b;
-    }
-}
+//         multiply(a.backend().data(), b.backend().data(), buf, tnum);
+//         res.assign(buf);
+//         mpz_clear(buf);
+//     }
+//     else {
+//         res = a * b;
+//     }
+// }
 
 class M
 {
 public:
-    BigInt X, Y, Z;
+    mpz_t X, Y, Z;
+    M(){mpz_init(X);mpz_init(Y);mpz_init(Z);}
+    ~M(){mpz_clear(X);mpz_clear(Y);mpz_clear(Z);}
 };
 
-const BigInt CT24 = C * C * C / 24;
-inline BigInt calcX(long long k)
+const ll CT24 = C * C * C / 24;
+inline void calcX(long long k, mpz_t X)
 {
     if (k == 0)
-        return 1;
-    return k * k * CT24 * k;
+        mpz_set_ui(X, 1);
+    else {
+        mpz_set_ui(X, k);
+        mpz_mul_ui(X,X,k);
+        mpz_mul_ui(X,X,k);
+        mpz_mul_ui(X,X,CT24);
+    }
 }
 
-inline BigInt calcY(long long k)
+inline void calcY(long long k, mpz_t Y)
 {
-    return A + B * k;
+    mpz_set_ui(Y, B);
+    mpz_mul_ui(Y, Y, k);
+    mpz_add_ui(Y, Y, A);
 }
 
-inline BigInt calcZ(long long k)
+inline void calcZ(long long k, mpz_t Z)
 {
-    if (k == n - 1)
-        return 0;
-    return -1 * (6 * k + 1) * BigInt(2 * k + 1) * (6 * k + 5);
+    if (k == n - 1) mpz_set_ui(Z, 0);
+    else {
+        mpz_set_ui(Z, 6 * k + 1);
+        mpz_mul_ui(Z, Z, 2*k + 1);
+        mpz_mul_si(Z, Z, -(6*k + 5));
+        // -1 * (6 * k + 1) * BigInt(2 * k + 1) * (6 * k + 5);
+    }
     //(6k+1)(6k+2)(6k+3)(6k+4)(6k+5)(6k+6)
 }
 
 inline void mul(const M &lm, const M &rm, M &m, const int tnum)
 {
     if(tnum == 0){
-        m.X = lm.X * rm.X;
-        m.Y = lm.Z * rm.Y + lm.Y * rm.X;
-        m.Z = lm.Z * rm.Z;
+        multiply(lm.X, rm.X, m.X);
+        multiply(lm.Z, rm.Z, m.Z);
+        mpz_t buf;
+        mpz_init(buf);
+        multiply(lm.Y, rm.Z, m.Y);
+        multiply(lm.Z, rm.Y, buf);
+        mpz_add(m.Y, m.Y, buf);
+        mpz_clear(buf);
     }
     else if(tnum == 1){
-        auto tY = thread([&]{m.Y = lm.Z * rm.Y + lm.Y * rm.X;});
-        m.X = lm.X * rm.X;
-        m.Z = lm.Z * rm.Z;
+        auto tY = thread([&]{
+            mpz_t buf;
+            mpz_init(buf);
+            multiply(lm.Y, rm.Z, m.Y);
+            multiply(lm.Z, rm.Y, buf);
+            mpz_add(m.Y, m.Y, buf);
+            mpz_clear(buf);
+        });
+        multiply(lm.X, rm.X, m.X);
+        multiply(lm.Z, rm.Z, m.Z);
         tY.join();
     }
     else if(tnum == 2){
-        auto tX = thread([&]{m.X = lm.X * rm.X;});
-        auto tY = thread([&]{m.Y = lm.Z * rm.Y + lm.Y * rm.X;});
-        m.Z = lm.Z * rm.Z;
+        auto tX = thread([&]{multiply(lm.X, rm.X, m.X);});
+        auto tY = thread([&]{
+            mpz_t buf;
+            mpz_init(buf);
+            multiply(lm.Y, rm.Z, m.Y);
+            multiply(lm.Z, rm.Y, buf);
+            mpz_add(m.Y, m.Y, buf);
+            mpz_clear(buf);
+        });
+        multiply(lm.Z, rm.Z, m.Z);
         tX.join();tY.join();
     }
     else if (tnum >= 3)
     {
-        auto tX = thread([&] { mul_wrap(lm.X, rm.X, m.X, min(2, tnum -3)); });
-        BigInt Y2;
-        auto tY1 = thread([&] { mul_wrap(lm.Z, rm.Y, m.Y, min(2, tnum - 3 - 2)); });
-        auto tY2 = thread([&] { mul_wrap(lm.Y, rm.X, Y2, min(2, tnum  - 3 - 4)); });
-        mul_wrap(lm.Z, rm.Z, m.Z, min(2, tnum - 3 - 6));
+        auto tX = thread([&] { multiply(lm.X, rm.X, m.X, min(2, tnum -3)); });
+        mpz_t Y2;
+        mpz_init(Y2);
+        auto tY1 = thread([&] { multiply(lm.Z, rm.Y, m.Y, min(2, tnum - 3 - 2)); });
+        auto tY2 = thread([&] { multiply(lm.Y, rm.X, Y2, min(2, tnum  - 3 - 4)); });
+        multiply(lm.Z, rm.Z, m.Z, min(2, tnum - 6));
         tX.join();
         tY1.join();
         tY2.join();
-        m.Y += Y2;
+        mpz_add(m.Y, m.Y, Y2);
+        mpz_clear(Y2);
     }
 }
 
-void calcM(int l, int r, M &m, int depth = 0, int tn = 0)
+void calcM(ll l, ll r, M &m, int depth = 0, int tn = 0)
 {
     if (r == l)
     {
-        m = {1, 0, 1};
+        mpz_set_ui(m.X, 1);
+        mpz_set_ui(m.Y, 0);
+        mpz_set_ui(m.Z, 1);
     }
     else if (r - l == 1)
     {
-        m = {calcX(l), calcY(l), calcZ(l)};
+        calcX(l, m.X), calcY(l, m.Y), calcZ(l, m.Z);
     }
     else
     {
-        int mid = (l + r) / 2;
+        ll mid = (l + r) / 2;
         M lm, rm;
         if (tn > 0)
         {
@@ -184,6 +229,10 @@ void calcM(int l, int r, M &m, int depth = 0, int tn = 0)
         // }
         mul(lm, rm, m, tn);
     }
+
+    // if(depth == 3){
+    //     cout << l << " " << r << ":" << m.X.backend().data()->_mp_size << ":" << m.Y.backend().data()->_mp_size << ":" << m.Z.backend().data()->_mp_size << endl;
+    // }
     // if(depth == SAVE_DEPTH){
     //     ofstream ofs("saves/"+to_string(N)+"_"+to_string(l)+"_"+to_string(r) + ".txt");
     //     ofs << m.X.str() << "\n" << m.Y.str()  << "\n" << m.Z.str() << "\n";
@@ -204,9 +253,9 @@ int main(int argc, char *argv[])
     M m;
     calcM(0, n, m,0, tnum - 1);
     cerr << "M" << endl;
-    p = (sqrt(BigFloat(CT)) / 12 / m.Y) * m.X;
+    p = (sqrt(BigFloat(CT)) / 12 / mp::mpz_int(m.Y)) * mp::mpz_int(m.X);
     cerr << "T" << endl;
-    // cout << setprecision(N) << p << endl;
+    cout << setprecision(N) << p << endl;
 
     return 0;
 }
