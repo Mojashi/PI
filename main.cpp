@@ -9,13 +9,14 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <fstream>
 #include <gmp.h>
+#include <chrono>
 
 #define SAVE_DEPTH 2
 
 using namespace std;
 namespace mp = boost::multiprecision;
 using ll = long long;
-const ll N = 100000000;
+const ll N = 100;
 const ll n = N / 14;
 
 using BigFloat = mp::number<mp::gmp_float<N>>;
@@ -29,7 +30,7 @@ inline void seperate(const mpz_t& x, mpz_t& hx, mpz_t& lx, int bitlen){
 }
 
 void multiply(const mpz_t& x, const mpz_t& y, mpz_t& res, int tnum = 0){
-    if(tnum < 2){
+    if(tnum < 200){
         mpz_mul(res, x, y);
         return;
     }
@@ -112,28 +113,28 @@ const ll CT24 = C * C * C / 24;
 inline void calcX(long long k, mpz_t X)
 {
     if (k == 0)
-        mpz_set_ui(X, 1);
+        mpz_set_si(X, 1);
     else {
-        mpz_set_ui(X, k);
-        mpz_mul_ui(X,X,k);
-        mpz_mul_ui(X,X,k);
-        mpz_mul_ui(X,X,CT24);
+        mpz_set_si(X, k);
+        mpz_mul_si(X,X,k);
+        mpz_mul_si(X,X,k);
+        mpz_mul_si(X,X,CT24);
     }
 }
 
 inline void calcY(long long k, mpz_t Y)
 {
-    mpz_set_ui(Y, B);
-    mpz_mul_ui(Y, Y, k);
+    mpz_set_si(Y, B);
+    mpz_mul_si(Y, Y, k);
     mpz_add_ui(Y, Y, A);
 }
 
 inline void calcZ(long long k, mpz_t Z)
 {
-    if (k == n - 1) mpz_set_ui(Z, 0);
+    if (k == n - 1) mpz_set_si(Z, 0);
     else {
-        mpz_set_ui(Z, 6 * k + 1);
-        mpz_mul_ui(Z, Z, 2*k + 1);
+        mpz_set_si(Z, 6 * k + 1);
+        mpz_mul_si(Z, Z, 2*k + 1);
         mpz_mul_si(Z, Z, -(6*k + 5));
         // -1 * (6 * k + 1) * BigInt(2 * k + 1) * (6 * k + 5);
     }
@@ -198,13 +199,13 @@ void calcM(ll l, ll r, M &m, int depth = 0, int tn = 0)
 {
     if (r == l)
     {
-        mpz_set_ui(m.X, 1);
-        mpz_set_ui(m.Y, 0);
-        mpz_set_ui(m.Z, 1);
+        mpz_set_si(m.X, 1);
+        mpz_set_si(m.Y, 0);
+        mpz_set_si(m.Z, 1);
     }
     else if (r - l == 1)
     {
-        calcX(l, m.X), calcY(l, m.Y), calcZ(l, m.Z);
+        calcX(l, m.X); calcY(l, m.Y); calcZ(l, m.Z);
     }
     else
     {
@@ -241,6 +242,15 @@ void calcM(ll l, ll r, M &m, int depth = 0, int tn = 0)
     // }
 }
 
+chrono::system_clock::time_point stopwatch;
+void reset_stopwatch(){
+    stopwatch = chrono::system_clock::now();
+}
+
+double get_elapsed_time(){
+    return chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - stopwatch).count();
+}
+
 int main(int argc, char *argv[])
 {
     BigFloat p;
@@ -250,11 +260,13 @@ int main(int argc, char *argv[])
         tnum = atoi(argv[1]);
     cerr << N << endl
          << tnum << endl;
+
+    reset_stopwatch();
     M m;
     calcM(0, n, m,0, tnum - 1);
-    cerr << "M" << endl;
-    p = (sqrt(BigFloat(CT)) / 12 / mp::mpz_int(m.Y)) * mp::mpz_int(m.X);
-    cerr << "T" << endl;
+    cerr << "calcM:" << get_elapsed_time()/1000 << "sec" << endl;
+    p = (mp::sqrt(BigFloat(CT))* mp::mpz_int(m.X)) / (12 * mp::mpz_int(m.Y));
+    cerr << "calcP:" << get_elapsed_time()/1000 << "sec" << endl;
     cout << setprecision(N) << p << endl;
 
     return 0;
