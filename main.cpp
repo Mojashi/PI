@@ -181,17 +181,18 @@ inline void mul(const M &lm, const M &rm, M &m, const int tnum)
     }
     else if (tnum >= 3)
     {
-        auto tX = thread([&] { multiply(lm.X, rm.X, m.X, min(2, tnum - 3)); });
+        int rtnum = tnum-3;
+        auto tX = thread([&] { multiply(lm.X, rm.X, m.X, min(2, rtnum/4)); });
         mpz_t Y2;
         mpz_init(Y2);
-        auto tY1 = thread([&] { multiply(lm.Z, rm.Y, m.Y, min(2, tnum - 3 - 2)); });
-        auto tY2 = thread([&] { multiply(lm.Y, rm.X, Y2, min(2, tnum - 3 - 4)); });
-        multiply(lm.Z, rm.Z, m.Z, min(2, tnum - 6));
-        tX.join();
+        auto tY1 = thread([&] { multiply(lm.Z, rm.Y, m.Y, min(2, rtnum/4)); });
+        auto tY2 = thread([&] { multiply(lm.Y, rm.X, Y2, min(2, rtnum/4)); });
+        multiply(lm.Z, rm.Z, m.Z, min(2, rtnum - (rtnum/4)*3));
         tY1.join();
         tY2.join();
         mpz_add(m.Y, m.Y, Y2);
         mpz_clear(Y2);
+        tX.join();
     }
 }
 
