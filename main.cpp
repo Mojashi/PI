@@ -13,7 +13,7 @@
 
 using namespace std;
 using ll = long long;
-const ll N = 100000;
+const ll N = 1000000;
 const ll n = N / 14;
 
 const ll A = 13591409, B = 545140134, C = 640320;
