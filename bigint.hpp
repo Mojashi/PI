@@ -38,6 +38,7 @@ public:
     size_t size();
     void print();
     unsigned long long int toULL();
+    double toDouble();
 
     unsigned long long int MSL();
     unsigned long long int LSL();

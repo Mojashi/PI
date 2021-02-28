@@ -1,11 +1,7 @@
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/multiprecision/cpp_dec_float.hpp>
 #include <iostream>
 #include <thread>
 #include <vector>
 #include <future>
-#include <boost/serialization/serialization.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 #include <fstream>
 #include <chrono>
 #include <complex>
@@ -14,8 +10,8 @@
 
 using namespace std;
 using ll = long long;
-const ll N = 500;
-const ll n = (N / 14) + (N/14) % 2;
+ll N;
+ll n;
 
 const ll A = 13591409, B = 545140134, C = 640320;
 const ll CT = C * C * C;
@@ -57,6 +53,14 @@ inline void mul(const M &lm, const M &rm, M &m, const int tnum, bool neg)
     m.X = lm.X * rm.X;
     m.Y = lm.Y * rm.X + lm.Z * rm.Y;
     m.Z = lm.Z * rm.Z;
+    cout << BigFloat(lm.Y).toDouble() << endl;
+    cout << BigFloat(rm.X).toDouble() << endl;
+    cout << BigFloat(lm.Z).toDouble() << endl;
+    cout << BigFloat(rm.Y).toDouble() << endl;
+    cout << BigFloat(lm.Y * rm.X).toDouble() << endl;
+    cout << BigFloat(lm.Z * rm.Y).toDouble() << endl;
+    cout << BigFloat(m.Y).toDouble() << endl;
+    cout << BigFloat(m.Z).toDouble() << endl;
 }
 
 void calcM(ll l, ll r, M &m, int depth = 0, int tn = 0)
@@ -104,15 +108,24 @@ double get_elapsed_time(){
 
 int main(int argc, char *argv[])
 {
+    if(argc < 2) {
+        cerr << "missing arguments" << endl;
+    }
+    N = atoi(argv[1]);
+    n = (N / 14) + (N/14) % 2;
+    cout << "precision : " << N << endl;
+
+
     int tnum = thread::hardware_concurrency();
-    if (argc > 1)
-        tnum = atoi(argv[1]);
+    if (argc > 2)
+        tnum = atoi(argv[2]);
     cerr << N << endl
          << tnum << endl;
+    cout << "thread : " << tnum << endl;
 
     reset_stopwatch();
     M m;
-    calcM(0, n, m,0, 0);
+    calcM(0, n, m,0, tnum - 1);
     cerr << "calcM:" << get_elapsed_time()/1000 << "sec" << endl;
     reset_stopwatch();
 
@@ -120,29 +133,10 @@ int main(int argc, char *argv[])
     of = invsqrt(of, N*4);
     BigFloat ans = BigFloat(BigInt(4270934400ULL) * m.X) * of * BigFloat(m.Y).reciprocal(N * 4);
     cerr << "calcP:" << get_elapsed_time()/1000 << "sec" << endl;
+    ans.shrink();
+    ans.print();
     cout << ans.toDouble() << endl;
     // ans.print();
 
     return 0;
 }
-
-// int main(){
-//     mpz_t x, y;
-//     mpz_init(x);
-//     mpz_init(y);
-//     mpz_set_str(x, "12312387371824714151626364421214421421421421421214127371662764818287236", 10);
-//     mpz_set_str(y, "-123415162636127371662764811213123412837128466126471264812418287236", 10);
-
-
-//     for(int i = 0; 100 > i; i++){
-//         mpz_t res;
-//         mpz_init(res);
-//         mpz_random(x, 10);
-//         mpz_random(y, 1);
-//         BigInt bx(x),by(y);
-//         cout << bx << endl << by << endl;
-//         multiply(x,y,res, 1);
-//         cout << bx * by - res << endl;
-//         mpz_clear(res);
-//     }
-// }

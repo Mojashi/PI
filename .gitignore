@@ -1,6 +1,7 @@
 check
+test
 pi
 out.txt
 
 saves/
-bigint.o
+*.o

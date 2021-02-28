@@ -26,8 +26,9 @@ BigFloat::BigFloat(double a){
 }
 
 BigFloat BigFloat::reciprocal(unsigned long long int digit){
-    BigFloat r(1 / this->toDouble());
     BigFloat one(BigInt(1ULL));
+    BigFloat r(1 / this->toDouble());
+    
     for(unsigned long long int i = 50; digit > i; i *= 2){
         BigFloat bufr = r;
         r = (r * (*this) - one) * bufr;
@@ -37,7 +38,7 @@ BigFloat BigFloat::reciprocal(unsigned long long int digit){
 }
 
 BigFloat BigFloat::operator*(const BigFloat& b){
-    BigFloat ret(b.fraction * this->fraction, b.exponent + this->exponent);
+    BigFloat ret(b.fraction * this->fraction, b.exponent + this->exponent, sign ^ b.sign);
     ret.shrink();
     return ret;
 }
@@ -87,14 +88,38 @@ void BigFloat::negate(){
 }
 
 void BigFloat::print(){
+    cout << "sign : " << sign << endl;
+    cout << "exponen : " << exponent << endl;
+    cout << "topexponen : " << exponent + fraction.limbs.size() + 1 << endl;
     fraction.print();
+}
+
+double testDiv(BigFloat& a, BigFloat& b){
+    a.shrink();
+    b.shrink();
+    const int sp = 10;
+    long long int atop = a.fraction.size() + a.exponent - 1;
+    long long int btop = b.fraction.size() + b.exponent - 1;
+
+    if(atop - btop > sp) return __DBL_MAX__;
+    if(btop - atop > sp) return 0;
+    
+    double af = 0,bf = 0;
+    for(int i = max(0UL, a.fraction.limbs.size() - sp); a.fraction.limbs.size() > i; i++) {
+        af += pow(BASE, i + a.exponent) * a.fraction.limbs[i];
+    }
+    for(int i = max(0UL, b.fraction.limbs.size() - sp); b.fraction.limbs.size() > i; i++) {
+        bf += pow(BASE, i + b.exponent) * b.fraction.limbs[i];
+    }
+    if(bf == 0) return __DBL_MAX__;
+    return af / bf;
 }
 
 double BigFloat::toDouble(){
     double ret = 0;
     // double base = pow(BASE, exponent + fraction.limbs.size() - 1);
     for(int i = 0; fraction.limbs.size() > i; i++) {
-        if((exponent + i) * BASE_E < -50 ||(exponent + i) * BASE_E > 50 || fraction.limbs[i] == 0) continue;
+        if(fraction.limbs[i] == 0) continue;
         double base = pow(BASE, exponent + i);
         ret += fraction.limbs[i] * base;
         // base /= BASE;
@@ -119,7 +144,12 @@ BigFloat invsqrt(BigFloat& b, unsigned long long digit){
 
 void BigFloat::shrink(){
     int lsl = fraction.LSL(), msl = fraction.MSL();
-
+    if(lsl > msl) {
+        exponent = 0;
+        fraction.limbs = vector<LIMB>(1);
+        return;
+    }
+    if(lsl == 0 && msl == fraction.limbs.size() - 1) return;
     exponent += lsl;
     fraction.limbs = vector<LIMB>(fraction.limbs.begin() + lsl, fraction.limbs.begin() + msl + 1);
 }

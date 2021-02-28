@@ -7,15 +7,13 @@
 using namespace std;
 
 void testInt(){
+    unsigned long long ad = 4333123123123ULL,bd =31491323322212ULL;
+    BigInt a(ad), b(bd);
+    cout << (double)ad * bd << endl;
+    cout << (a * b).toDouble() << endl;
 
-    BigInt a(100000ULL),b(3149ULL), c(12311ULL);
-    int hn = max({a.limbs.size(),b.limbs.size(),c.limbs.size()});
-    Fourier fa = a.FFT(hn),fb = b.FFT(hn),fc = c.FFT(hn);
-    BigInt ba = (fa * fb).IFFT(),bb = (fa * fc).IFFT();
-    ba.print();
-    bb.print();
-    (a * b).print();
-    (a + b).print();
+    BigFloat af(ad * 1.0), bf(bd * 1.0);
+    cout << (af * bf).toDouble() << endl;
 }
 
 void testFloat(){
@@ -25,13 +23,21 @@ void testFloat(){
     assert(!(a < a));
     (a-b).print();
 
-    BigFloat af(a), bf(b);
-    cout << invsqrt(bf, 10).toDouble() << endl;
-
+    BigFloat af(12347474710.0), bf(123038383883.0);
+    BigFloat afrac(af.fraction), bfrac(bf.fraction);
+    cout << afrac.toDouble() << endl;
+    cout << bfrac.toDouble() << endl;
+    cout << BigFloat(af.fraction * bf.fraction).toDouble() << endl;
     cout << af.toDouble() << endl;
-    cout << bf.reciprocal(10).toDouble() << endl;
+    cout << bf.toDouble() << endl;
+
+    cout << (af * bf).toDouble() << endl;
+    
 }
 
 int main(){
-    testFloat();
+    BigFloat f(__inf());
+    f.shrink();
+    f.print();
+    cout <<f.toDouble() << endl;
 }

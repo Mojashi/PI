@@ -74,6 +74,14 @@ unsigned long long BigInt::toULL(){
     }
     return sum;
 }
+double BigInt::toDouble(){
+    double sum = 0;
+    for(int i = 0; limbs.size() > i; i++){
+        double cur = pow(BASE, i) * limbs[i];
+        sum += cur;
+    }
+    return sum;
+}
 void Fourier::print(){
     for(int i = 0; limbs.size() > i; i++){
         printf("%lf,%lf\n", limbs[i].real(), limbs[i].imag());

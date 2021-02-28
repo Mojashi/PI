@@ -25,3 +25,4 @@ public:
 };
 
 BigFloat invsqrt(BigFloat& b, unsigned long long digit);
+double testDiv(BigFloat& a, BigFloat& b);
