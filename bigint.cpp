@@ -36,7 +36,7 @@ Fourier Fourier::operator*(const Fourier& b) const {
 
 BigInt::BigInt() : limbs(1){}
 BigInt::BigInt(size_t sz) : limbs(sz){}
-BigInt::BigInt(long long a){
+BigInt::BigInt(unsigned long long a){
     if(a == 0) limbs.push_back(0);
     while(a > 0){
         limbs.push_back(a % BASE);
@@ -66,6 +66,14 @@ void BigInt::print(){
     }
     printf("%lld\n", sum);
 }
+unsigned long long BigInt::toULL(){
+    unsigned long long int sum = 0, b = 1;
+    for(int i = 0; limbs.size() > i; i++){
+        sum += b * limbs[i];
+        b *= BASE;
+    }
+    return sum;
+}
 void Fourier::print(){
     for(int i = 0; limbs.size() > i; i++){
         printf("%lf,%lf\n", limbs[i].real(), limbs[i].imag());
@@ -73,7 +81,8 @@ void Fourier::print(){
 }
 
 void BigInt::normalize(){
-    long long carry = 0;
+    LIMB carry = 0;
+    int msl = 0;
     for(int i = 0; limbs.size() > i; i++){
         limbs[i] += carry;
         carry = 0;
@@ -81,11 +90,17 @@ void BigInt::normalize(){
             carry = limbs[i] >> BASE_E;
             limbs[i] &= BASE_MASK;
         }
+        if(limbs[i] != 0) msl = i;
     }
     while(carry>0){
-        limbs.push_back(carry & BASE_MASK);
+        LIMB cur = carry & BASE_MASK;
+        limbs.push_back(cur);
         carry >>= BASE_E;
+        if(cur != 0) msl = limbs.size() - 1;
     }
+
+    if(limbs.size() > msl * 1.5) 
+        limbs.resize(msl + 1);
 }
 
 size_t BigInt::size() {
@@ -100,13 +115,20 @@ void BigInt::operator+= (const BigInt& b){
         limbs[i] += b.limbs[i] + carry;
         carry = 0;
         if(limbs[i] >= BASE){
-            carry = limbs[i] >> BASE_E;
+            carry = 1;
             limbs[i] &= BASE_MASK;
         }
     }
-    while(carry>0){
-        limbs.push_back(carry & BASE_MASK);
-        carry >>= BASE_E;
+    for(int i = b.limbs.size(); limbs.size() > i; i++){
+        limbs[i] += carry;
+        carry = 0;
+        if(limbs[i] >= BASE){
+            carry = 1;
+            limbs[i] &= BASE_MASK;
+        }
+    }
+    if(carry==1){
+        limbs.push_back(1);
     }
 }
 
@@ -115,12 +137,23 @@ void BigInt::operator-= (const BigInt& b){
         limbs.resize(b.limbs.size());
     long long carry = 0;
     for(int i = 0; b.limbs.size() > i; i++){
-        limbs[i] -= b.limbs[i] - carry;
+        if(limbs[i] < b.limbs[i] + carry){
+            limbs[i] += BASE - b.limbs[i] - carry;
+            carry = 1;
+        }
+        else {
+            limbs[i] -= b.limbs[i] + carry;
+            carry = 0;
+        }
+    }
+    for(int i = b.limbs.size(); limbs.size() > i; i++){
+        limbs[i] -= carry;
         carry = 0;
         if(limbs[i] < 0){
             carry = 1;
             limbs[i] += BASE;
         }
+        if(carry == 0) break;
     }
     assert(carry == 0);
 }
@@ -157,4 +190,17 @@ BigInt BigInt::operator- (const BigInt& b) const {
     ret.limbs = limbs;
     ret -= b;
     return ret;
+}
+
+unsigned long long int BigInt::MSL(){
+    for(int i = limbs.size() - 1; 0 <= i; i--){
+        if(limbs[i] != 0) return i;
+    }
+    return 0;
+}
+unsigned long long BigInt::LSL(){
+    for(int i = 0; limbs.size() > i; i++){
+        if(limbs[i] != 0) return i;
+    }
+    return limbs.size() - 1;
 }

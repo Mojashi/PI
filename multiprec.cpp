@@ -76,8 +76,9 @@ void ifft(vector<cmplx>& ar){
     }
 }
 
-void convolve(const vector<long long>& _A, const vector<long long>& _B, vector<long long>& C){
-    const long long *A = &_A[0], *B = &_B[0];
+template<typename T>
+void convolve(const vector<T>& _A, const vector<T>& _B, vector<T>& C){
+    const T *A = &_A[0], *B = &_B[0];
     if(_A.size() < _B.size()) swap(A,B);
 
     int n = max(_A.size(), _B.size()), m = min(_A.size(), _B.size());
@@ -106,3 +107,4 @@ void convolve(const vector<long long>& _A, const vector<long long>& _B, vector<l
         C[i*2 + 1] = 2*round(CC[i].imag())/k;
     }
 }
+template void convolve<unsigned long long>(const vector<unsigned long long>&, const vector<unsigned long long>&, vector<unsigned long long>&);

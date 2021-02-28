@@ -5,10 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) 起動",
+            "name": "debug test",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/BigInt/a.out",
+            "program": "${workspaceFolder}/test",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "gdb の再フォーマットを有効にする",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "debug pi",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/pi",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -4,6 +4,8 @@
 #include "multiprec.hpp"
 using std::vector;
 
+typedef unsigned long long LIMB;
+
 class BigInt;
 
 class Fourier {
@@ -19,14 +21,12 @@ public:
 
 class BigInt {
 public:
-    bool negative;
     void normalize();
-    vector<long long> limbs;
+    vector<LIMB> limbs;
 
-    bool isNegative();
     BigInt();
     BigInt(size_t sz);
-    BigInt(long long a);
+    BigInt(unsigned long long a);
     BigInt operator* (const BigInt& b) const;
     void operator+= (const BigInt& b);
     void operator-= (const BigInt& b);
@@ -37,4 +37,8 @@ public:
     Fourier FFT(size_t hn);
     size_t size();
     void print();
+    unsigned long long int toULL();
+
+    unsigned long long int MSL();
+    unsigned long long int LSL();
 };

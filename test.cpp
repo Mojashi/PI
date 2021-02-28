@@ -8,7 +8,7 @@ using namespace std;
 
 void testInt(){
 
-    BigInt a(100000LL),b(3149LL), c(12311LL);
+    BigInt a(100000ULL),b(3149ULL), c(12311ULL);
     int hn = max({a.limbs.size(),b.limbs.size(),c.limbs.size()});
     Fourier fa = a.FFT(hn),fb = b.FFT(hn),fc = c.FFT(hn);
     BigInt ba = (fa * fb).IFFT(),bb = (fa * fc).IFFT();
@@ -19,16 +19,17 @@ void testInt(){
 }
 
 void testFloat(){
-    BigInt a(100000LL),b(3149LL);
+    BigInt a(12000ULL),b(3ULL);
 
     assert(a > b);
     assert(!(a < a));
     (a-b).print();
 
     BigFloat af(a), bf(b);
+    cout << invsqrt(bf, 10).toDouble() << endl;
 
     cout << af.toDouble() << endl;
-    cout << af.reciprocal(10).toDouble() << endl;
+    cout << bf.reciprocal(10).toDouble() << endl;
 }
 
 int main(){
