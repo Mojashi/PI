@@ -1,5 +1,10 @@
-CXX = g++-9
-CFLAGS = -O0 -g -std=c++17 -D _GLIBCXX_DEBUG -D _GLIBCXX_DEBUG_PEDANTIC
+CXX = g++-8
+
+CFLAGS = -O0 -g -std=c++17 -D _GLIBCXX_DEBUG -D _GLIBCXX_DEBUG_PEDANTIC -D_DEBUG
+
+ifeq ($(BUILD),release)
+	CFLAGS = -O3 -std=c++17
+endif
 
 multiprec.o: multiprec.hpp multiprec.cpp 
 	$(CXX) multiprec.cpp -c $(CFLAGS)

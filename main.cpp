@@ -53,14 +53,6 @@ inline void mul(const M &lm, const M &rm, M &m, const int tnum, bool neg)
     m.X = lm.X * rm.X;
     m.Y = lm.Y * rm.X + lm.Z * rm.Y;
     m.Z = lm.Z * rm.Z;
-    cout << BigFloat(lm.Y).toDouble() << endl;
-    cout << BigFloat(rm.X).toDouble() << endl;
-    cout << BigFloat(lm.Z).toDouble() << endl;
-    cout << BigFloat(rm.Y).toDouble() << endl;
-    cout << BigFloat(lm.Y * rm.X).toDouble() << endl;
-    cout << BigFloat(lm.Z * rm.Y).toDouble() << endl;
-    cout << BigFloat(m.Y).toDouble() << endl;
-    cout << BigFloat(m.Z).toDouble() << endl;
 }
 
 void calcM(ll l, ll r, M &m, int depth = 0, int tn = 0)
@@ -110,8 +102,11 @@ int main(int argc, char *argv[])
 {
     if(argc < 2) {
         cerr << "missing arguments" << endl;
+        N = 1000;
     }
-    N = atoi(argv[1]);
+    else {
+        N = atoi(argv[1]);
+    }
     n = (N / 14) + (N/14) % 2;
     cout << "precision : " << N << endl;
 
@@ -129,9 +124,15 @@ int main(int argc, char *argv[])
     cerr << "calcM:" << get_elapsed_time()/1000 << "sec" << endl;
     reset_stopwatch();
 
+    cout << m.X.toDouble() << endl;
+    cout << m.Y.toDouble() << endl;
+    cout << m.Z.toDouble() << endl;
+
     BigFloat of = BigFloat(10005);
-    of = invsqrt(of, N*4);
-    BigFloat ans = BigFloat(BigInt(4270934400ULL) * m.X) * of * BigFloat(m.Y).reciprocal(N * 4);
+    long long int keta = ceil(N / log10(BASE));
+    cout <<"need prec:" << keta << endl;
+    of = invsqrt(of, keta);
+    BigFloat ans = BigFloat(BigInt(4270934400ULL) * m.X) * of * BigFloat(m.Y).reciprocal(keta);
     cerr << "calcP:" << get_elapsed_time()/1000 << "sec" << endl;
     ans.shrink();
     ans.print();

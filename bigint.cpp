@@ -2,6 +2,9 @@
 #include <vector>
 #include <complex>
 #include <cassert>
+#include <boost/multiprecision/cpp_int.hpp>
+
+namespace mp = boost::multiprecision;
 
 using namespace std;
 
@@ -48,6 +51,11 @@ BigInt BigInt::operator* (const BigInt& b) const {
     BigInt c(size_t(1 << (getFSize(n) + 1)));
     convolve(limbs, b.limbs, c.limbs);
     c.normalize();
+#ifdef DEBUG
+    if(c.toCppInt() != b.toCppInt() * toCppInt()){
+        cout << c.size() << " " << limbs.size() << " " << b.limbs.size() << endl;
+    }
+#endif
     return c;
 }
 Fourier BigInt::FFT(size_t hn){
@@ -74,7 +82,7 @@ unsigned long long BigInt::toULL(){
     }
     return sum;
 }
-double BigInt::toDouble(){
+double BigInt::toDouble() const {
     double sum = 0;
     for(int i = 0; limbs.size() > i; i++){
         double cur = pow(BASE, i) * limbs[i];
@@ -211,4 +219,13 @@ unsigned long long BigInt::LSL(){
         if(limbs[i] != 0) return i;
     }
     return limbs.size() - 1;
+}
+
+mp::cpp_int BigInt::toCppInt() const{
+    mp::cpp_int ret = 0;
+    for(int i = limbs.size() - 1; i >= 0; i--){
+        ret *= BASE;
+        ret += limbs[i];
+    }
+    return ret;
 }

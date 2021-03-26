@@ -25,15 +25,49 @@ BigFloat::BigFloat(double a){
     fraction = BigInt((extractBit(a, 0, 52) | (1LL << 52)) << sa);
 }
 
-BigFloat BigFloat::reciprocal(unsigned long long int digit){
-    BigFloat one(BigInt(1ULL));
-    BigFloat r(1 / this->toDouble());
-    
-    for(unsigned long long int i = 50; digit > i; i *= 2){
-        BigFloat bufr = r;
-        r = (r * (*this) - one) * bufr;
-        r = bufr - r;
+BigFloat getInitialR(BigFloat& b){
+    b.shrink();
+    unsigned long long int v = 0;
+    unsigned long long int base = 1;
+    int st = max(0, (int)b.fraction.size() - 4);
+    for(int i = st; i < b.fraction.size(); i++){
+        v += base * b.fraction.limbs[i];
+        base *= BASE;
     }
+
+    BigFloat ret(1.0 / v);
+    ret.exponent += -(b.exponent + st);
+    ret.sign = b.sign;
+    return ret;
+}
+
+BigFloat BigFloat::reciprocal(unsigned long long int digit){
+    cout << "reciprocal" << endl;
+    shrink();
+    long long int ordig = fraction.size();
+
+    BigFloat one(BigInt(1ULL));
+    // cout << "reci : " << init << endl;
+    // BigFloat r(BigInt(1ULL), exptwo, sign);
+    BigFloat r = getInitialR(*this);
+    BigFloat prod = r * (*this), delta = one - prod;
+    long long prec = -(delta.exponent + (long long)delta.fraction.MSL())-1;
+    while(max(0ll, prec) < digit){
+        cout << "prec:" << prec << endl;
+        cout << "delta:" << delta.toDouble() << endl;
+        cout << "r:" << r.toDouble() << endl;
+        cout << delta.sign << endl;
+
+        BigFloat upd = r * delta;
+        r = r + upd;
+        prod = r * (*this);
+        delta = one - prod;
+        prec = -(delta.exponent + (long long)delta.fraction.MSL())-1;
+
+        r.changeExponent(min(-ordig - prec * 2, -prec * 2));
+        delta.changeExponent(min(-ordig - prec * 2, -prec * 2));
+    }
+    cout << "prec:" << prec << endl;
     return r;
 }
 
@@ -75,11 +109,14 @@ void BigFloat::changeExponent(long long int nexponent){
     int diff = exponent - nexponent;
     exponent = nexponent;
     if(diff > 0){
-        vector<LIMB> buf(diff);
-        fraction.limbs.insert(fraction.limbs.begin(), buf.begin(), buf.end());
+        fraction.limbs.insert(fraction.limbs.begin(), diff, 0);
     } else if(diff < 0){
         diff = max(0, -diff);
-        fraction.limbs = vector<LIMB>(fraction.limbs.begin() + diff, fraction.limbs.end());
+        if(fraction.limbs.size() <= diff) {
+            fraction.limbs = vector<LIMB>(1);
+        }else 
+            fraction.limbs = vector<LIMB>(fraction.limbs.begin() + diff,  
+                fraction.limbs.begin() + max({(unsigned long long)diff, (unsigned long long)fraction.limbs.size(), fraction.MSL() + 1}));
     }
 }
 
@@ -91,7 +128,7 @@ void BigFloat::print(){
     cout << "sign : " << sign << endl;
     cout << "exponen : " << exponent << endl;
     cout << "topexponen : " << exponent + fraction.limbs.size() + 1 << endl;
-    fraction.print();
+    // fraction.print();
 }
 
 double testDiv(BigFloat& a, BigFloat& b){
@@ -124,21 +161,50 @@ double BigFloat::toDouble(){
         ret += fraction.limbs[i] * base;
         // base /= BASE;
     }
+    return ret * (sign * (-2) + 1);
+}
+
+BigFloat getInitialI(BigFloat& b){
+    b.shrink();
+    unsigned long long int v = 0;
+    unsigned long long int base = 1;
+    int st = max(0, (int)b.fraction.size() - 4);
+
+    for(int i = st; i < b.fraction.size(); i++){
+        v += base * b.fraction.limbs[i];
+        base *= BASE;
+    }
+
+    BigFloat ret(1.0 / sqrt(v));
+    ret.exponent += -(b.exponent + st + 1)/2;
+    if((b.exponent + st)%2) {
+        ret = ret * BigFloat(BASE_SQRT);
+    }
+    ret.sign = b.sign;
     return ret;
 }
 
-BigFloat invsqrt(BigFloat& b, unsigned long long digit){
-    BigFloat r(1 / sqrt(b.toDouble()));
+BigFloat invsqrt(BigFloat& b, unsigned long long int digit){
+    cout << "invsqrt" << endl;
     BigFloat one(BigInt(1ULL));
-    BigFloat invtwo = BigFloat(BigInt(2ULL << (BASE_E-1)),-1);
-    for(unsigned long long int i = 50; digit > i; i *= 2){
-        cout << r.toDouble() << endl;
-        cout << r.fraction.size() << endl;
-        cout << r.fraction.MSL() << endl;
-        BigFloat bufr = r;
-        bufr = (r * r * b - one) * r * invtwo;
-        r = r-bufr;
+    BigFloat invtwo = BigFloat(0.5);
+    BigFloat r = getInitialI(b);
+    BigFloat prod = r * r * b;
+    BigFloat delta = one - prod;
+    long long prec = -(delta.exponent + (long long)delta.fraction.MSL())-1;
+    while(prec < digit){
+        cout << "prec:" << prec << endl;
+
+        BigFloat upd = r * delta * invtwo;
+        r = r + upd;
+        prod = r * r * b;
+        delta = one - prod;
+        prec = -(delta.exponent + (long long)delta.fraction.MSL())-1;
+
+        r.changeExponent(-prec * 2);
+        delta.changeExponent(-prec * 2);
     }
+    cout << "prec:" << prec << endl;
     return r;
 }
 

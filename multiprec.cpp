@@ -52,7 +52,7 @@ void fft(vector<cmplx>& A){
     for(j = 1; k >= j; j++){
         int sn = 1 << j;
         for(i = 0; i < j; i++) 
-            tbl[1<<i] = exp(-1i*PI2*cmplx((1<<i))/cmplx(sn));
+            tbl[1<<i] = exp((cmplx)-1i*PI2*cmplx((1<<i))/cmplx(sn));
         for(i = 0; sn/2 > i; i++) {
             if(i!=(i&-i))
                 tbl[i] = tbl[i&-i]*tbl[i^(i&-i)];
@@ -86,7 +86,7 @@ void convolve(const vector<T>& _A, const vector<T>& _B, vector<T>& C){
     vector<cmplx> CH(k), CC(k/2);
 
     for(int i = 0; m > i; i++)
-        CH[i] = cmplx(A[i]) + cmplx(B[i])*1i;
+        CH[i] = cmplx(A[i]) + cmplx(B[i])*(cmplx)1i;
     for(int i = m; n > i; i++)
         CH[i] = cmplx(A[i]);
 
@@ -96,15 +96,15 @@ void convolve(const vector<T>& _A, const vector<T>& _B, vector<T>& C){
         cmplx buf = i==0?conj(CH[0]):conj(CH[k-i]);
         cmplx buf2 = conj(CH[k/2-i]);
         // printf("a:%lf,%lf\n", ((CH[i] + buf)/cmplx(2)).real(), ((CH[i] + buf)/cmplx(2)).imag());
-        cmplx fr = conj((CH[i] + buf) * (CH[i] - buf) / 4i);
-        cmplx bk = conj((CH[k/2+i] + buf2) * (CH[k/2+i] - buf2) / 4i);
-        CC[i] = ((fr+bk) +  1i*(fr-bk)*exp(cmplx(-i)*1i*PI2/cmplx(k)))/cmplx(2);
+        cmplx fr = conj((CH[i] + buf) * (CH[i] - buf) / (cmplx)4i);
+        cmplx bk = conj((CH[k/2+i] + buf2) * (CH[k/2+i] - buf2) / (cmplx)4i);
+        CC[i] = ((fr+bk) +  (cmplx)1i*(fr-bk)*exp(cmplx(-i)*(cmplx)1i*PI2/cmplx(k)))/cmplx(2);
     }
     fft(CC);
     
     for(int i = 0; k/2 > i; i++){
-        C[i*2] = 2*round(CC[i].real())/k;
-        C[i*2 + 1] = 2*round(CC[i].imag())/k;
+        C[i*2] = round(2*CC[i].real()/k);
+        C[i*2 + 1] = round(2*CC[i].imag()/k);
     }
 }
 template void convolve<unsigned long long>(const vector<unsigned long long>&, const vector<unsigned long long>&, vector<unsigned long long>&);

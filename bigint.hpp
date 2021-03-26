@@ -2,6 +2,9 @@
 #include <complex>
 #include <vector>
 #include "multiprec.hpp"
+#include <boost/multiprecision/cpp_int.hpp>
+
+namespace mp = boost::multiprecision;
 using std::vector;
 
 typedef unsigned long long LIMB;
@@ -38,7 +41,8 @@ public:
     size_t size();
     void print();
     unsigned long long int toULL();
-    double toDouble();
+    double toDouble() const;
+    mp::cpp_int toCppInt() const;
 
     unsigned long long int MSL();
     unsigned long long int LSL();
