@@ -131,27 +131,6 @@ void BigFloat::print(){
     // fraction.print();
 }
 
-double testDiv(BigFloat& a, BigFloat& b){
-    a.shrink();
-    b.shrink();
-    const int sp = 10;
-    long long int atop = a.fraction.size() + a.exponent - 1;
-    long long int btop = b.fraction.size() + b.exponent - 1;
-
-    if(atop - btop > sp) return __DBL_MAX__;
-    if(btop - atop > sp) return 0;
-    
-    double af = 0,bf = 0;
-    for(int i = max(0UL, a.fraction.limbs.size() - sp); a.fraction.limbs.size() > i; i++) {
-        af += pow(BASE, i + a.exponent) * a.fraction.limbs[i];
-    }
-    for(int i = max(0UL, b.fraction.limbs.size() - sp); b.fraction.limbs.size() > i; i++) {
-        bf += pow(BASE, i + b.exponent) * b.fraction.limbs[i];
-    }
-    if(bf == 0) return __DBL_MAX__;
-    return af / bf;
-}
-
 double BigFloat::toDouble(){
     double ret = 0;
     // double base = pow(BASE, exponent + fraction.limbs.size() - 1);
